@@ -5,7 +5,7 @@ const arguments = process.argv;
 
 if (arguments[2]) {
   process.chdir(arguments[2]);
-  exec(`node main.js`, (err, stdout, stderr) => {
+  exec(`node ${arguments[3] ? 'part2' : 'part1'}.js`, (err, stdout, stderr) => {
     if (err) {
       console.error(err);
       return;
