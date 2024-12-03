@@ -4,13 +4,8 @@ const fs = require('fs');
 const input = fs.readFileSync('./input.txt', 'utf8');
 
 const safeReports = input.split('\n')
-  .map((report) => {
-    const safe = isSafeReport(report);
-    if (!safe) {
-      return checkReportWithoutFirstLevel(report);
-    }
-    return safe;
-  })
+  .map((report) => report.split(' ').map(Number))
+  .map((report) => isSafeReport(report))
   // Count safe reports
   .reduce((acc, cur) => {
     if (cur) {
@@ -23,49 +18,33 @@ console.log(safeReports);
 
 /**
  * Check if a report is safe (with optional dampener)
- * @param {string} report
+ * @param {number[]} levels
  * @param {boolean} disableDampener
  * @returns {boolean}
  */
-function isSafeReport(report, disableDampener = false) {
-  const levels = report.split(' ').map(Number);
-
+function isSafeReport(levels, disableDampener = false) {
   let prev = levels[0];
   let isAsc = null;
-  let problemDampened = disableDampener;
 
-  for (let index = 0; index < levels.length; index++) {
+  for (let index = 1; index < levels.length; index++) {
     const cur = levels[index];
-    // Skip first level
-    if (index === 0) {
-      continue;
-    }
-    // Check if levels are out of range
-    if (Math.abs(cur - prev) === 0 || Math.abs(cur - prev) > 3) {
-      if (problemDampened) {
-        return false;
-      }
-      problemDampened = true;
-      continue;
-    }
+
     // Init direction
     if (isAsc === null) {
       isAsc = cur > prev;
     }
-    // Check if direction is consistent
-    if (isAsc && cur < prev) {
-      if (problemDampened) {
+
+    if (
+      // Check if levels are out of range
+      Math.abs(cur - prev) === 0 || Math.abs(cur - prev) > 3 ||
+      // Check if direction is consistent
+      isAsc && cur < prev || !isAsc && cur > prev
+    ) {
+      if (disableDampener) {
         return false;
       }
-      problemDampened = true;
-      continue;
-    }
-    if (!isAsc && cur > prev) {
-      if (problemDampened) {
-        return false;
-      }
-      problemDampened = true;
-      continue;
+      return isSafeReport(splice(levels, index), true) ||
+        isSafeReport(splice(levels, index - 1), true);
     }
     prev = cur;
   }
@@ -73,8 +52,12 @@ function isSafeReport(report, disableDampener = false) {
   return true;
 }
 
-function checkReportWithoutFirstLevel(report) {
-  const levels = report.split(' ');
-  const levelsWithoutFirst = levels.slice(1);
-  return isSafeReport(levelsWithoutFirst.join(' '), true);
+/**
+ * Splice array and return
+ * @param array
+ * @param index
+ * @returns {*}
+ */
+function splice(array, index) {
+  return array.filter((_, i) => i !== index);
 }
